@@ -1,0 +1,43 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: test-scale-object
+spec:
+  scaleTargetRef:
+    apiVersion:    apps/v1		 	     # Optional. Default: apps/v1
+    kind:          Deployment  		             # Optional. Default: Deployment
+    name:          my-nginx		             # Mandatory. Must be in the same namespace as the ScaledObject
+    #envSourceContainerName: .spec.template.spec.containers[0]         # Optional. Default: .spec.template.spec.containers[0]
+  pollingInterval:  1                               # Optional. Default: 30 seconds
+  cooldownPeriod:   30                              # Optional. Default: 300 seconds
+  #idleReplicaCount: 1                                # Optional. Default: ignored, must be less than minReplicaCount 
+  minReplicaCount:  0                                # Optional. Default: 0
+  maxReplicaCount:  10                               # Optional. Default: 100
+  fallback:                                          # Optional. Section to specify fallback options
+    failureThreshold: 3                              # Mandatory if fallback section is included
+    replicas: 6                                      # Mandatory if fallback section is included
+  advanced:                                          # Optional. Section to specify advanced options
+    restoreToOriginalReplicaCount: true             # Optional. Default: false
+    horizontalPodAutoscalerConfig:                   # Optional. Section to specify HPA related options
+      behavior:                                      # Optional. Use to modify HPA's scaling behavior
+        scaleDown:
+          stabilizationWindowSeconds: 3
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 15
+  triggers:
+  # scaleup when workdays
+  - type: cron
+    metadata:
+      timezone: Asia/Shanghai
+      start: 0 9 * * 1
+      end: 0 0 * * 6
+      desiredReplicas: "3"
+  # scaleup when daily high traffic
+  - type: cron
+    metadata:
+      timezone: Asia/Shanghai
+      start: 6 17 * * *
+      end: 8 17 * * *
+      desiredReplicas: "6"
